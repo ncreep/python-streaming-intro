@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>FS2 Streaming Intro</title>
+<title>An Introduction to Streaming (in Python)</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel='stylesheet' type='text/css' href='style.css' />
 </head>
@@ -10,7 +10,7 @@
 
 class: center, middle, transition, intro
 
-# FS2 Streaming Intro
+# An Introduction to Streaming<br /> (in Python)
 
 .horizontalCentered.caption[Daniel Beskin]
 
@@ -39,16 +39,16 @@ Reach out for:
 
 --
 
-```scala
- readUtf8Lines(Path("fahrenheit.txt"))
+```python
+readUtf8Lines(Path("fahrenheit.txt"))
 
-	.map(fahrenheitToCelsius)
+    .map(fahrenheit_to_celsius)
 
-	.intersperse("\n")
+    .intersperse("\n")
 
-	.through(text.utf8.encode)
+    .via(text.utf8.encode)
 
-	.through(writeAll(Path("celsius.txt")))
+    .via(write_all(Path("celsius.txt")))
 ```
 
 ???
@@ -59,92 +59,94 @@ Reach out for:
 ## Non-strict ("Lazy")
 --
 
-```scala
-Stream(1, 2, 3)
-  .repeat
-  .take(50)
-  .toList
+```python
+Stream.values(1, 2, 3)
+    .repeat()
+    .take(50)
+    .to_list()
 
-// List(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, ...)
-```
-
----
-	
-## Effectful
-
---
-
-```scala
-val nums = Stream.range(1, 5).evalMap: i => 
-  IO(println(s"This is $i"))
-```
-
---
-```scala
-// This is 1
-// This is 2
-// This is 3
-// This is 4
+# [1, 2, 3, 1, 2, 3, 1, 2, 3, ...]
 ```
 
 ---
 
-## Time-aware 
+layout: true
+
+## Time-aware
+
+---
+---
+
+```python
+nums = Stream.range(1, 5)
+  .foreach(lambda i: print(f"This is {i}"))
+```
 
 --
+```python
+# This is 1
+# This is 2
+# This is 3
+# This is 4
+```
 
-```scala
-val delays = Stream.sleep[IO](1.second).repeat
+---
+
+
+```python
+delays = Stream.sleep(1).repeat()
+{{content}}
+```
+--
 
 delays.zip(nums)
-```
 
 --
 
-```scala
-// ... sleeping
-// This is 1
-// ... sleeping
-// This is 2
-// ... sleeping
-// This is 3
-// ... sleeping
-// This is 4
+```python
+# ... sleeping
+# This is 1
+# ... sleeping
+# This is 2
+# ... sleeping
+# This is 3
+# ... sleeping
+# This is 4
 ```
 
 ---
+layout: false
 
 ## Concurrent
 
 --
 
-```scala
-val biggerNums = Stream.range(10, 15)
-  .evalMap(i => IO(println(s"Slower $i")))
-
-val longerDelays = Stream.fixedDelay[IO](2.seconds)
-
-{{content}}
+```python
+bigger_nums = Stream.range(10, 15).foreach(
+    lambda i: print(f"Slower {i}")
+)
+longer_delays = Stream.fixed_delay(2)
 ```
 
 --
-val s1 = delays.zip(nums)
-val s2 = longerDelays.zip(biggerNums)
+```python
+s1 = delays.zip(nums)
+s2 = longer_delays.zip(bigger_nums)
 
 s1.merge(s2)
+```
 
 --
-
-```scala
-// This is 1
-// Slower 10
-// This is 2
-// This is 3
-// Slower 11
-// This is 4
-// Slower 12
-// Slower 13
-// Slower 14
+```python
+# This is 1
+# Slower 10
+# This is 2
+# This is 3
+# Slower 11
+# This is 4
+# Slower 12
+# Slower 13
+# Slower 14
 
 ```
 
@@ -154,51 +156,25 @@ s1.merge(s2)
 
 --
 
-```scala
-val err = 
-  Stream("a", "b", "c") ++ 
-    Stream.raiseError[IO](new Exception("oh noes!"))
-
-{{content}}
+```python
+err = Stream.values("a", "b", "c").append(
+    Stream.raise_error(Exception("oh noes!"))
+)
 ```
 
 --
+```python
 err
-  .handleErrorWith(e => Stream(s"Got: ${e.getMessage}"))
-  .printlns
---
-
-```scala
-// a
-// b
-// c
-// Got: oh noes!
+  .handle_error(lambda e: Stream.values(f"Got: {e}"))
+  .foreach(print)
 ```
-
----
-
-## Resource-safe
-
 --
 
-```scala
-val open = IO(println("opening")).as(3)
-val close = (_: Int) => IO(println("closing"))
-
-Stream.bracket(open)(close)
-  .flatMap(res => Stream( "a" * res, "b" * res))
-  .printlns
-```
-
-???
-- Resource-safety is guaranteed even in the face of errors
-
---
-```scala
-// opening
-// aaa
-// bbb
-// closing
+```python
+# a
+# b
+# c
+# Got: oh noes!
 ```
 
 ---
@@ -206,8 +182,8 @@ Stream.bracket(open)(close)
 
 
 .streamType.centered[
-```scala
-Stream[+F[_], +O]
+```python
+Stream[Output]
 ```
 ]
 ---
@@ -266,29 +242,37 @@ A pipeline:
 
 ---
 
-```scala
-case class VacationReport(
-	name: String, days: Int, sickLeave: Boolean)
+```python
+class VacationReport:
+    name: str
+    days: int
+    sick_leave: bool
 
-case class Enriched(
-	value: VacationReport, metadata: Metadata)
+class Metadata:
+    available_days: int
 
-case class Metadata(availableDays: Int)
+class Enriched:
+    value: VacationReport
+    metadata: Metadata
 ```
 
 ---
 
-```scala
-trait EmployeeAPI:
-  def enrich(vacation: VacationReport): IO[Enriched]
-
-{{content}}
+```python
+class EmployeeAPI(ABC):
+    async def enrich(
+      self, 
+      vacation: VacationReport) -> Enriched
 ```
 --
-trait DBWriter:
-  def write(value: Enriched): IO[Unit]
+```python
+class DBWriter(ABC):
+    async def write(self, value: Enriched) -> None
 
-  def writeAll(values: Seq[Enriched]): IO[Unit]
+    async def write_all(
+        self,
+        values: Sequence[Enriched]) -> None
+```
 ---
 
 layout: true
@@ -296,43 +280,45 @@ layout: true
 
 ---
 
-```scala
-val vacations: Stream[Pure, VacationReport] =
-  Stream(
-    VacationReport("Alice", 1, sickLeave = false),
-    VacationReport("Bob", 2, sickLeave = true),
-    VacationReport("Charlie", 1, sickLeave = false),
-    VacationReport("David", 3, sickLeave = true))
+```python
+vacations: Stream[VacationReport] = Stream.values(
+    VacationReport("Alice", 1, False),
+    VacationReport("Bob", 2, True),
+    VacationReport("Charlie", 1, False),
+    VacationReport("David", 3, True),
+)
 ```
 
 --
 
-```scala
-val sickly: Stream[Pure, String] =
+```python
+sickly: Stream[String] = (
   vacations
-    .filter(_.sickLeave)
-    .map(_.name)
+    .filter(is_sick)
+    .map(report_name)
+)
 ```
 ---
 
-```scala
-val flow: Stream[IO, Unit] =
+```python
+flow: Stream[None] = (
   vacations
-    .evalMap(api.enrich)
-    .evalMap(db.write)
+    .mapAsync(api.enrich)
+    .mapAsync(db.write)
+)
 ```
 
 --
 
-```scala
+```txt
 Getting available vacation days for Alice
-Writing Enriched(VacationReport(Alice,1,false),4)
+Writing Enriched(VacationReport(Alice, 1, False), 4)
 Getting available vacation days for Bob
-Writing Enriched(VacationReport(Bob,2,true),1)
+Writing Enriched(VacationReport(Bob, 2, True), 1)
 Getting available vacation days for Charlie
-Writing Enriched(VacationReport(Charlie,1,false),6)
+Writing Enriched(VacationReport(Charlie, 1, False), 6)
 Getting available vacation days for David
-Writing Enriched(VacationReport(David,3,true),2)
+Writing Enriched(VacationReport(David, 3, True), 2)
 ```
 
 ---
@@ -343,30 +329,31 @@ layout: true
 
 ---
 
-```scala
-type Pipe[F[_], -I, +O] = Stream[F, I] => Stream[F, O]
+```python
+Flow[Input, Output]
 ```
 
 --
 
-```scala
-def enrichPipeline(
-  api: EmployeeAPI): Pipe[IO, VacationReport, Enriched] =
+```python
+def enrich_pipeline(
+    api: EmployeeAPI) -> Flow[VacationReport, Enriched]:
 
-  in => in.evalMap(api.enrich)
-
-def dbPipeline(
-  db: DBWriter): Pipe[IO, Enriched, Unit] =
-
-  in => in.evalMap(db.write)
+    return flow(VacationReport).mapAsync(api.enrich)
+{{content}}
 ```
+--
+
+def db_pipeline(db: DBWriter) -> Flow[Enriched, None]:
+
+    return flow(Enriched).mapAsync(db.write)
 
 --
 
-```scala
+```python
 vacations
-  .through(enrichPipeline(api))
-  .through(dbPipeline(db))
+    .via(enrich_pipeline(api))
+    .via(db_pipeline(db))
 ```
 
 ---
@@ -376,28 +363,28 @@ layout: true
 
 ---
 
-```scala
-val fromFile: Stream[IO, VacationReport] =
-{{content}}
+```python
+from_file: Stream[VacationReport] = (
+{{content}})
 ```
 --
-  Files[IO]
-    .readAll(Path("vacations.csv"))
-    .through(text.utf8.decode)
-    .through(text.lines)
+    read_all(Path("vacations.csv"))
 {{content}}
 --
-	.map(VacationReport.parseCSV) 
-	// Stream[IO, Option[VacationReport]]
+      .via(text.utf8.decode)
+      .via(text.lines)
 {{content}}
 --
-	.unNone
-
+      .map(VacationReport.parse_csv)
+      # Stream[VacationReport | None]
+{{content}}
 --
-```scala
-fromFile
-  .through(enrichPipeline(api))
-  .through(dbPipeline(db))
+      .drop_none()
+--
+```python
+from_file
+    .via(enrich_pipeline(api))
+    .via(db_pipeline(db))
 ```
 
 ---
@@ -407,24 +394,23 @@ layout: true
 
 ---
 
-```scala
-val fromConsole: Stream[IO, VacationReport] =
-  Stream
-    .repeatEval(Console[IO].readLine)
-{{content}}
+```python
+from_console: Stream[VacationReport] = (
+{{content}})
 ```
-	
 --
-	.map(VacationReport.parseCSV)
-	.unNone
-	
+    Stream.repeat_eval(read_line)
+{{content}}
+--
+      .map(VacationReport.parse_csv)
+      .drop_none()
 
 --
 
-```scala
-fromConsole
-  .through(enrichPipeline(api))
-  .through(dbPipeline(db))
+```python
+from_console
+    .via(enrich_pipeline(api))
+    .via(db_pipeline(db))
 ```
 
 ---
@@ -435,41 +421,83 @@ layout: true
 
 ---
 
-```scala
-in
-  .evalMap(api.enrich)
+```python
+flow(VacationReport)
+    .mapAsync(api.enrich)
 ```
 
 ---
 
-```scala
-in
-  .metered(50.millis)
-  .evalMap(api.enrich)
+```python
+flow(VacationReport)
+    .spaceout(0.05)
+    .mapAsync(api.enrich)
 ```
 
 ---
 
-```scala
-in
-  .through(throttle(20, 1.second, Enforcing))
-  .evalMap(api.enrich)
-```
-
----
-
-```scala
-in
-  .through(throttle(20, 1.second, Enforcing))
-  .parEvalMap(10)(api.enrich)
+```python
+flow(VacationReport)
+    .spaceout(0.05)
+    .mapAsync(api.enrich, concurrency=10)
 ```
 
 --
-```scala
-fromFile
-  .through(enrichPipeline(api))
-  .through(dbPipeline(db))
+```python
+from_file
+    .via(enrich_pipeline(api))
+    .via(db_pipeline(db))
 ```
+
+---
+
+layout: true
+
+## What You're Missing
+
+---
+
+---
+
+.imperativeCode[
+```python
+start_lock = Lock()
+next_start = loop.time()
+
+async def enrich_one(report: VacationReport) -> Enriched:
+    nonlocal next_start
+
+    async with start_lock:
+        now = loop.time()
+        if next_start > now:
+            await sleep(next_start - now)
+        next_start = loop.time() + 0.05
+
+    return await api.enrich(report)
+
+pending: deque[Task[Enriched]] = deque()
+
+with Path("vacations.csv").open() as file:
+    eof = False
+    while not eof or pending:
+        while not eof and len(pending) < 10:
+            line = file.readline()
+            if line == "":
+                eof = True
+                break
+            report = VacationReport.parse_csv(line)
+            if report is None:
+                continue
+            pending.append(create_task(enrich_one(report)))
+
+        if not pending:
+            continue
+        enriched = await pending.popleft()
+
+        await db.write(enriched)
+```
+]
+
 ---
 layout: true
 
@@ -477,68 +505,44 @@ layout: true
 
 ---
 
-```scala
-in
-  .evalMap(dbWriter.write)
+```python
+flow(Enriched)
+    .mapAsync(db.write)
 ```
 
 ---
 
-```scala
-in
-  .groupWithin(10, 1.second)
-  .evalMap(dbWriter.writeAll)
+```python
+flow(Enriched)
+    .group_within(max_items=10, duration=1.0)
+    .mapAsync(db.write_all)
 ```
 
 ---
 
-```scala
-in
-  .groupWithin(10, 1.second)
-  .parEvalMap(5)(dbWriter.writeAll)
+```python
+flow(Enriched)
+    .group_within(max_items=10, duration=1.0)
+    .mapAsync(db.write_all, concurrency=5)
 ```
 
 ---
-```scala
-in
-  .groupWithin(10, 1.second)
-  .parEvalMapUnordered(5)(dbWriter.writeAll)
+```python
+flow(Enriched)
+    .group_within(max_items=10, duration=1.0)
+    .mapAsyncUnordered(db.write_all, concurrency=5)
 ```
+
+???
+
+- In the imperative version, to support `unordered` we would need to rewrite the code and use something like a semaphore
 
 --
 
-```scala
-fromConsole
-  .through(enrichPipeline(api))
-  .through(dbPipeline(db))
-```
-
----
-layout: true
-
-## Resources
----
-
-```scala
-val makeEmployeeAPI: Stream[IO, EmployeeAPI.Prod] =
-
-  Stream.bracket(EmployeeAPI.init("secret"))(_.shutdown)
-```
-
---
-
-```scala
-val makeDBWriter: Stream[IO, DBWriter] =
-
-  Stream.resource(DBWriter.resource)
-```
-
---
-
-```scala
-val resources: Stream[IO, (EmployeeAPI.Prod, DBWriter)] =
-
-  makeEmployeeAPI.parZip(makeDBWriter)
+```python
+from_console
+    .via(enrich_pipeline(api))
+    .via(db_pipeline(db))
 ```
 
 ---
@@ -548,31 +552,68 @@ layout: true
 
 ---
 
-```scala
-val fromNetwork: Stream[IO, VacationReport] =
-  val clients: Stream[IO, Socket[IO]] =
-    Network[IO].server(
-      Some(host"localhost"), 
-      Some(port"5555"))
-{{content}}
+```python
+clients: Stream[Client] =(
+  tcp_clients(host="localhost", port=5555)
+)
 ```
 --
 
-  val reports: Stream[IO, Stream[IO, VacationReport]] =
-    clients.map: client =>
-      client.reads
-        .through(text.utf8.decode)
-        .through(text.lines)
-        .map(VacationReport.parseCSV)
-        .unNone
-{{content}}				
+```python
+from_network: Stream[VacationReport] = (
+  clients.map(
+{{content}}  )
+)
+```
 --
-        .handleErrorWith(_ => Stream.empty) 
-{{content}}
+        lambda client: (
+            client.reads
+              .map(VacationReport.parse_csv)
+              .drop_none()
+        )
+---
 
---
+```python
+clients: Stream[Client] =(
+  tcp_clients(host="localhost", port=5555)
+)
+```
 
-  reports.parJoin(100)
+```python
+from_network: Stream[VacationReport] = (
+  clients.map(
+        lambda client: (
+            client.reads
+              .map(VacationReport.parse_csv)
+              .drop_none()
+              .handle_error(lambda e: Stream.empty())
+        )
+  )
+)
+```
+---
+
+```python
+clients: Stream[Client] =(
+  tcp_clients(host="localhost", port=5555)
+)
+```
+
+```python
+from_network: Stream[VacationReport] = (
+  clients.map(
+        lambda client: (
+            client.reads
+              .map(VacationReport.parse_csv)
+              .drop_none()
+              .handle_error(lambda e: Stream.empty())
+        )
+  ).flatten(task_limit=100)
+)
+```
+
+
+
 
 ---
 
@@ -581,122 +622,18 @@ layout: true
 ## Full App
 ---
 
-```scala
-object Demo extends IOApp.Simple:
-{{content}}
-```
-
---
-
-  val flow: Stream[IO, Unit] =
-    resources.flatMap: (api, db) =>
-      fromNetwork
-        .through(enrichPipeline(api))
-        .through(dbPipeline(db))
-{{content}}
---
-
-  val action: IO[Unit] = flow.compile.drain
-
-{{content}}
---
-  def run: IO[Unit] = action
-
----
-layout:true
-
-## Bonus: gRPC
----
-
-```protobuf
-service VacationReportService {
-  rpc submitReports (stream VacationReport)
-    returns (Done);
-}
+```python
+async with resources() as (api, db):
+    pipeline = from_network
+        .via(enrich_pipeline(api))
+        .via(db_pipeline(db))
 {{content}}
 ```
 --
 
-message VacationReport {
-  string name = 1;
-  int32 days = 2;
-  bool sickLeave = 3;
-}
-
-message Done {}
----
-
-```scala
-val fromGrpc: Stream[IO, VacationReport] =
-{{content}}
-```
---
-  val requests: Stream[IO, GrpcRequest[proto.VR]] =
-    EndpointServer.run(port = 5555)(
-      VacationReportService.make)
-{{content}}
---
-
-  val reports: Stream[IO, Stream[IO, VacationReport]] =
-    requests.map: request =>
-      request.stream
-        .map(fromProto)
-        .unNone
-        .handleErrorWith(_ => Stream.empty)
-
-  reports.parJoin(100)
-
----
-
-```scala
-object ServerDemo extends IOApp.Simple:
-  val flow =
-    resources.flatMap: (api, db) =>
-      fromGrpc
-        .through(enrichPipeline(api))
-        .through(dbPipeline(db))
-
-  val action: IO[Unit] = flow.compile.drain
-
-  def run: IO[Unit] = action
-```
----
-
-```scala
-object ClientDemo extends IOApp.Simple:
-  val vacationReportService =
-    NettyChannelBuilder
-      .forAddress("localhost", 5555)
-      .usePlaintext
-      .resource[IO]
-      .flatMap(ReportServiceFs2Grpc
-        .stubResource[IO])
-{{content}}
-```
---
-
-  val run = vacationReportService.use: service =>
-    service
-    .submitReports(fromFile.map(toProto), Metadata())
-    .void
----
+    await pipeline.drain()
 
 
-```scala
-object ClientDemo extends IOApp.Simple:
-  val vacationReportService =
-    NettyChannelBuilder
-      .forAddress("localhost", 5555)
-      .usePlaintext
-      .resource[IO]
-      .flatMap(ReportServiceFs2Grpc
-        .stubResource[IO])
-
-  val run = vacationReportService.use: service =>
-    service
-    .submitReports(fromConsonle.map(toProto), Metadata())
-    .void
-```
 
 ---
 layout: false
@@ -708,6 +645,9 @@ class: transition
 ]
 
 .endQuote.footnote[Fabio Labella, [Compose Your Program Flow with Stream](https://www.youtube.com/watch?v=x3GLwl1FxcA)]
+
+.centered.linksFin.githubLink[[https://github.com/ncreep/python-streaming-intro](https://github.com/ncreep/python-streaming-intro)]
+
 .centered.linksFin.linkStackFin[[linksta.cc/@ncreep](https://linksta.cc/@ncreep)]
 
 
@@ -715,10 +655,8 @@ class: transition
 </textarea>
 <script	src="remark-0.14.0.min.js"></script>
 
-<!-- For Scala 3 highlighting support -->
 <link rel="stylesheet" href="highlight.11.7.0.magula.min.css">
 <script src="highlight.11.7.0.min.js"></script>
-<script src="highlight.11.7.0.scala.min.js"></script>
 
 <script>
 // overriding the built-in highlighter with the newer version
@@ -729,7 +667,7 @@ remark.highlighter.engine = hljs;
   var slideshow = remark.create({
 	countIncrementalSlides: false,
   highlightLines: true,
-	highlightLanguage: 'scala',
+	highlightLanguage: 'python',
 	highlightStyle: 'magula' // default, googlecode, magula, vs
 });
 </script>

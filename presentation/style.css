@@ -308,7 +308,7 @@ blockquote cite:before {
 }
 
 .githubLink {
-  margin-top: 250px;
+  margin-top: 170px;
   width: 900px;
   font-size: 0.7em;
   text-align: center;
@@ -376,9 +376,13 @@ blockquote cite:before {
 }
 
 .linkStackFin {
-  margin-top: 170px;
+  margin-top: 250px;
 }
 
 .streamType code {
   font-size: 2em;
+}
+
+.imperativeCode code {
+  font-size: 0.5em;
 }

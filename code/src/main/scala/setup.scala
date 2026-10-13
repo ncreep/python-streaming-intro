@@ -1,6 +1,0 @@
-//> using scala "3.6.4"
-//> using dep "co.fs2::fs2-core:3.11.0"
-//> using dep "co.fs2::fs2-io:3.11.0"
-//> using dep "dev.kovstas::fs2-throttler::1.0.13"
-//> using dep "org.typelevel::fs2-grpc-runtime::2.7.21"
-//> using dep "io.grpc:grpc-netty-shaded:1.71.0"

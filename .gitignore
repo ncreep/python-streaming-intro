@@ -1,9 +1,6 @@
-.vscode/
-.metals/
-.bloop/
-.bsp/
-.VSCodeCounter/
-.ammonite/
-metals.sbt
-.scala-build/
-target/
+.venv/
+.hypothesis/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
